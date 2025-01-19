@@ -5,14 +5,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 import 'dart:developer';
-import 'dart:html';
+import 'dart:js_interop';
+import 'package:web/web.dart';
 import 'dart:math' as math;
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:js/js.dart';
+// import 'package:js/js.dart';
 import 'package:js/js_util.dart';
 import 'package:synchronized/synchronized.dart' as synchronized;
 
@@ -71,10 +72,10 @@ class SpotifySdkPlugin {
   final StreamController connectionStatusEventController;
 
   /// Dio http client
-  final Dio _dio = Dio(BaseOptions(
+  final dio.Dio _dio = dio.Dio(dio.BaseOptions(
     baseUrl: 'https://api.spotify.com/v1/me/player',
   ));
-  final Dio _authDio = Dio(BaseOptions());
+  final dio.Dio _authDio = dio.Dio(dio.BaseOptions());
 
   /// Lock for getting the token
   final synchronized.Lock _getTokenLock = synchronized.Lock(reentrant: true);
@@ -277,7 +278,9 @@ class SpotifySdkPlugin {
       _onSpotifyWebPlaybackSDKReady = allowInterop(_onSpotifyInitialized);
 
       // load spotify sdk
-      querySelector('body')!.children.add(ScriptElement()..src = spotifySdkUrl);
+      // querySelector('body')!.children.add(HTMLScriptElement()..src = spotifySdkUrl);
+      // document.body?.children.add(HTMLScriptElement()..src = spotifySdkUrl);
+      document.body?.children.add(HTMLScriptElement()..src = spotifySdkUrl);
 
       // wait for initialization
       while (_sdkLoaded == false) {
@@ -389,6 +392,7 @@ class SpotifySdkPlugin {
 
   /// Gets the current Spotify token or
   /// refreshes the token if it expired.
+  @JSExport()
   Future<String> getSpotifyAuthToken() async {
     return await _getTokenLock.synchronized<String>(() async {
       if (_spotifyToken?.accessToken != null) {
@@ -461,7 +465,7 @@ class SpotifySdkPlugin {
     }));
 
     // loop and wait for auth
-    while (authPopup.closed == false && message == null) {
+    while (authPopup!.closed == false && message == null) {
       // await response from the window
       await Future.delayed(const Duration(milliseconds: 250));
     }
@@ -499,11 +503,11 @@ class SpotifySdkPlugin {
     // exchange auth code for access and refresh tokens
     dynamic authResponse;
 
-    RequestOptions req;
+    dio.RequestOptions req;
 
     if (tokenSwapURL == null) {
       // build request to exchange auth code with PKCE for access and refresh tokens
-      req = RequestOptions(
+      req = dio.RequestOptions(
         path: 'https://accounts.spotify.com/api/token',
         method: 'POST',
         data: {
@@ -513,26 +517,26 @@ class SpotifySdkPlugin {
           'redirect_uri': redirectUrl,
           'code_verifier': codeVerifier
         },
-        contentType: Headers.formUrlEncodedContentType,
+        contentType: dio.Headers.formUrlEncodedContentType,
       );
     } else {
       // or build request to exchange code with token swap
       // https://developer.spotify.com/documentation/ios/guides/token-swap-and-refresh/
-      req = RequestOptions(
+      req = dio.RequestOptions(
         path: tokenSwapURL!,
         method: 'POST',
         data: {
           'code': parsedMessage.queryParameters['code'],
           'redirect_uri': redirectUrl,
         },
-        contentType: Headers.formUrlEncodedContentType,
+        contentType: dio.Headers.formUrlEncodedContentType,
       );
     }
 
     try {
       var res = await _authDio.fetch(req);
       authResponse = res.data;
-    } on DioException catch (e) {
+    } on dio.DioException catch (e) {
       log('Spotify auth error: ${e.response?.data}');
       rethrow;
     }
@@ -549,10 +553,10 @@ class SpotifySdkPlugin {
   /// Refreshes the Spotify access token using the refresh token.
   Future<dynamic> _refreshSpotifyToken(
       String? clientId, String? refreshToken) async {
-    RequestOptions req;
+    dio.RequestOptions req;
     if (tokenRefreshURL == null) {
       // build request to refresh PKCE for access and refresh tokens
-      req = RequestOptions(
+      req = dio.RequestOptions(
         path: 'https://accounts.spotify.com/api/token',
         method: 'POST',
         data: {
@@ -560,18 +564,18 @@ class SpotifySdkPlugin {
           'refresh_token': refreshToken,
           'client_id': clientId,
         },
-        contentType: Headers.formUrlEncodedContentType,
+        contentType: dio.Headers.formUrlEncodedContentType,
       );
     } else {
       // or build request to refresh code with token swap
       // https://developer.spotify.com/documentation/ios/guides/token-swap-and-refresh/
-      req = RequestOptions(
+      req = dio.RequestOptions(
         path: tokenRefreshURL!,
         method: 'POST',
         data: {
           'refresh_token': refreshToken,
         },
-        contentType: Headers.formUrlEncodedContentType,
+        contentType: dio.Headers.formUrlEncodedContentType,
       );
     }
 
@@ -580,7 +584,7 @@ class SpotifySdkPlugin {
       var d = res.data;
       d['refresh_token'] = refreshToken;
       return d;
-    } on DioException catch (e) {
+    } on dio.DioException catch (e) {
       log('Token refresh error: ${e.response?.data}');
       rethrow;
     }
@@ -626,7 +630,7 @@ class SpotifySdkPlugin {
         'uris': [uri]
       },
       queryParameters: {'device_id': _currentPlayer!.deviceID},
-      options: Options(
+      options: dio.Options(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
@@ -645,7 +649,7 @@ class SpotifySdkPlugin {
     await _dio.post(
       '/queue',
       queryParameters: {'uri': uri, 'device_id': _currentPlayer!.deviceID},
-      options: Options(
+      options: dio.Options(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
@@ -667,7 +671,7 @@ class SpotifySdkPlugin {
         'state': shuffleEnabled,
         'device_id': _currentPlayer!.deviceID
       },
-      options: Options(
+      options: dio.Options(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
@@ -690,7 +694,7 @@ class SpotifySdkPlugin {
         'state': repeatMode.toString().substring(11),
         'device_id': _currentPlayer!.deviceID
       },
-      options: Options(
+      options: dio.Options(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
@@ -709,7 +713,7 @@ class SpotifySdkPlugin {
     await _dio.put(
       '/shuffle',
       queryParameters: {'state': state, 'device_id': _currentPlayer!.deviceID},
-      options: Options(
+      options: dio.Options(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
@@ -728,7 +732,7 @@ class SpotifySdkPlugin {
     await _dio.put(
       '/repeat',
       queryParameters: {'state': state, 'device_id': _currentPlayer!.deviceID},
-      options: Options(
+      options: dio.Options(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
