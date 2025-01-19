@@ -162,6 +162,26 @@ class SpotifySdk {
     }
   }
 
+  /// Returns an access token as a [String]
+  ///
+  /// Assumes, that Spotify is already connected.
+  /// The token can be used to communicate with the web api
+  /// iOS specific: You can optionally pass a [spotifyUri]. A blank string will play the user's last song or pick a random one. It will be ignored on platforms other than iOS.
+  /// Throws a [PlatformException] if retrieving the access token
+  /// failed.
+  /// Throws a [MissingPluginException] if the method is not implemented on
+  /// the native platforms.
+  static Future<String> getSpotifyAuthToken() async {
+    try {
+      final token =
+          await _channel.invokeMethod(MethodNames.getSpotifyAuthToken);
+      return token.toString();
+    } on Exception catch (e) {
+      _logException(MethodNames.getAccessToken, e);
+      rethrow;
+    }
+  }
+
   /// Gets the current [CrossfadeState]
   ///
   /// Throws a [PlatformException] getting the crossfadeState failed

@@ -173,7 +173,7 @@ class SpotifySdkPlugin {
         _currentPlayer = Player(PlayerOptions(
             name: playerName,
             getOAuthToken: allowInterop((Function callback, t) {
-              _getSpotifyAuthToken().then((value) {
+              getSpotifyAuthToken().then((value) {
                 callback(value);
               });
             })));
@@ -218,6 +218,8 @@ class SpotifySdkPlugin {
             redirectUrl: redirectUrl,
             scopes:
                 call.arguments[ParamNames.scope] as String? ?? defaultScopes);
+      case MethodNames.getSpotifyAuthToken:
+        return await getSpotifyAuthToken();
       case MethodNames.disconnectFromSpotify:
         log('Disconnecting from Spotify...');
         _spotifyToken = null;
@@ -387,7 +389,7 @@ class SpotifySdkPlugin {
 
   /// Gets the current Spotify token or
   /// refreshes the token if it expired.
-  Future<String> _getSpotifyAuthToken() async {
+  Future<String> getSpotifyAuthToken() async {
     return await _getTokenLock.synchronized<String>(() async {
       if (_spotifyToken?.accessToken != null) {
         // attempt to use the previously authorized credentials
@@ -627,7 +629,7 @@ class SpotifySdkPlugin {
       options: Options(
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getSpotifyAuthToken()}'
+          'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
         },
       ),
     );
@@ -646,7 +648,7 @@ class SpotifySdkPlugin {
       options: Options(
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getSpotifyAuthToken()}'
+          'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
         },
       ),
     );
@@ -668,7 +670,7 @@ class SpotifySdkPlugin {
       options: Options(
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getSpotifyAuthToken()}'
+          'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
         },
       ),
     );
@@ -691,7 +693,7 @@ class SpotifySdkPlugin {
       options: Options(
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getSpotifyAuthToken()}'
+          'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
         },
       ),
     );
@@ -710,7 +712,7 @@ class SpotifySdkPlugin {
       options: Options(
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getSpotifyAuthToken()}'
+          'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
         },
       ),
     );
@@ -729,7 +731,7 @@ class SpotifySdkPlugin {
       options: Options(
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _getSpotifyAuthToken()}'
+          'Authorization': 'Bearer ${await getSpotifyAuthToken()}'
         },
       ),
     );
