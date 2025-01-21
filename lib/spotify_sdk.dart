@@ -55,7 +55,7 @@ class SpotifySdk {
   static final Logger _logger = Logger(
     //filter: CustomLogFilter(), // custom logfilter can be used to have logs in release mode
     printer: PrettyPrinter(
-      methodCount: 2,
+      methodCount: 12,
       errorMethodCount: 8,
       lineLength: 120,
       colors: true,
